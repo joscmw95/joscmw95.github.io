@@ -17,10 +17,10 @@
 	<div class="card container">
         <div class="row">
             <div class="col-xs-12 col-sm-2">
-                <img src="images/profile.jpg" alt="Joshua" class="img-circle img-responsive" style="margin: auto;">
+                <img src="images/profile.jpg" alt="Joshua" class="img-circle img-responsive">
             </div>
             <div class="col-xs-12 col-sm-10">
-                <span class="name">Joshua Chan Mun Wei</span>
+                <p class="name">Joshua Chan Mun Wei</p>
                 <ul class="list-inline">
                     <li><i class="fa fa-birthday-cake fa-fw" aria-hidden="true"></i> 20 Feb 1995</li>
                     <li><i class="fa fa-location-arrow fa-fw" aria-hidden="true"></i> Ipoh, Perak</li>
@@ -28,7 +28,7 @@
                     <li><a href="mailto:joscmw95@gmail.com" style="color: #333"><i class="fa fa-envelope-o fa-fw" aria-hidden="true"></i> joscmw95@gmail.com</a></li>
                 </ul>
                 <hr/>
-                I'm a student currently taking the course of Bachelor of Computer Science (Hons) at University Tunku Abdul Rahman. Graduating soon on mid-year 2017, I'm looking forward to a challenging and rewarding job.
+                <p class="text-justify">I'm a student currently taking the course of Bachelor of Computer Science (Hons) at University Tunku Abdul Rahman. Graduating soon on mid-year 2017, I'm looking forward to a challenging and rewarding job.</p>
             </div>
         </div>
 	</div>
@@ -129,7 +129,8 @@
                             <div class="col-xs-12 col-sm-9">
                                 <h5>Knowledgeable in multiple programming languages, markup languages and frameworks.</h5>
                                 <ul>
-                                    <li>C, C++, Java, Python, Ruby, R, PHP, JavaScript</li>
+                                    <li>C, C++, Java, Ruby, <a href="images/top30games.png" target="_blank" rel="popover" title="Ranking Games by Google Trends" data-img="images/top30games.png">Python, R</a>, 
+                                    <a href="http://readthym.hol.es/" target="_blank" rel="popover" title="Social Blogging Website" data-img="images/readthym.png">PHP</a>, JavaScript</li>
                                     <li>HTML, CSS</li>
                                     <li>Bootstrap, jQuery, AngularJS, Firebase</li>
                                 </ul>
@@ -143,7 +144,7 @@
                             <div class="col-xs-12 col-sm-9">
                                 <h5>Possess strong algorithmic thinking, problem solving and analytical skills.</h5>
                                 <ul>
-                                    <li>National ACM-ICPC Malaysia 2016 Champion</li>
+                                    <li><a href="images/the_star.jpg" target="_blank" rel="popover" title="The Star, 10 November 2016" data-img="images/the_star.jpg">National ACM-ICPC Malaysia 2016 Champion</a></li>
                                     <li>Avid competitive programming contestant</li>
                                     <li>Quick learner and problem solver</li>
                                 </ul>
@@ -161,7 +162,17 @@
             <li><a href="https://www.facebook.com/joscmw95"><i class="fa fa-facebook fa-lg" aria-hidden="true"></i></a></li>
             <li><a href="https://www.linkedin.com/in/joscmw95"><i class="fa fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
         </ul>
-        <p class="text-center">&copy; 2016. All Rights Reserved</p>
+        <p class="text-center" style="margin-bottom: 10px;">&copy; 2016. All Rights Reserved</p>
     </div>
+    <script>
+        $(document).ready(function() {
+            $('[rel=popover]').popover({
+                html: true,
+                trigger: 'hover',
+                placement: 'top',
+                content: function(){return '<img style="width: 100%; height:auto;" src="'+$(this).data('img') + '" />';}
+            });
+        });
+    </script>
 </body>
 </html>

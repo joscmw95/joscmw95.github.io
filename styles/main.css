@@ -10,17 +10,25 @@ h2 {
 
 h4 {
     font-weight: bold;
-}
-
-h4, h5, h6 {
     margin-top: 5px;
     margin-bottom: 5px;
+}
+
+h5, h6 {
+    font-weight: normal;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+p {
+    margin: 0;
 }
 
 .name {
     font-size: 28px;
     font-weight: bold;
     line-height: 1.1;
+    margin-bottom: 1px;
 }
 
 .container {
@@ -44,6 +52,14 @@ h4, h5, h6 {
     padding: 12px;
 }
 
+.img-circle {
+    margin: auto;
+}
+
+.popover-content {
+    padding: 5px;
+}
+
 @media (max-width: 768px) {
     hr { 
         margin-top: 10px; 
@@ -57,5 +73,6 @@ h4, h5, h6 {
     
     .img-circle {
         width: 128px;
+        margin-bottom: 5px;
     }
 }
