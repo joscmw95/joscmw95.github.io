@@ -56,6 +56,10 @@ p {
     margin: auto;
 }
 
+.img-thumbnail {
+    display: block;
+}
+
 .popover-content {
     padding: 5px;
 }
