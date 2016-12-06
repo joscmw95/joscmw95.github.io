@@ -183,14 +183,47 @@
         <p class="text-center" style="margin-bottom: 10px;">&copy; 2016. All Rights Reserved</p>
     </div>
     <script>
-        $(document).ready(function() {
-            $('[rel=popover]').popover({
-                html: true,
-                trigger: 'hover',
-                placement: 'top',
-                content: function(){return '<img style="width: 100%; height:auto;" src="'+$(this).data('img') + '" />';}
-            });
-        });
+        var css_loading = '<div id="floatingCirclesG">' +
+                                '<div class="f_circleG" id="frotateG_01"></div>' +
+                                '<div class="f_circleG" id="frotateG_02"></div>' +
+                                '<div class="f_circleG" id="frotateG_03"></div>' +
+                                '<div class="f_circleG" id="frotateG_04"></div>' +
+                                '<div class="f_circleG" id="frotateG_05"></div>' +
+                                '<div class="f_circleG" id="frotateG_06"></div>' +
+                                '<div class="f_circleG" id="frotateG_07"></div>' +
+                                '<div class="f_circleG" id="frotateG_08"></div>' +
+                            '</div>';
+                            
+        $('[rel=popover]').hover(
+            function (event) {
+                var el = $(this);
+
+                // add initial popovers with loading animation
+                el.popover({
+                    content: css_loading,
+                    html: true,
+                    placement: "top",
+                    trigger: 'hover'
+                });
+
+                // show this loading popover
+                el.popover('show');
+
+                // requesting data using url from data-img attribute
+                img = new Image();
+                img.src = el.data('img');
+                img.onload = function() {
+                    // set new content to popover
+                    el.data('bs.popover').options.content = '<img style="width: 100%; height:auto;" src="'+ img.src + '" />';
+
+                    // reshow popover with new content
+                    el.popover('show');
+                }
+            },
+            // Without this handler popover flashes on first mouseout
+            function() { }
+        );
+        
     </script>
 </body>
 </html>
