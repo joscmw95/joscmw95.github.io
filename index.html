@@ -12,6 +12,7 @@
     <!-- Font Awesome -->
 	<script src="https://use.fontawesome.com/32bb1c5b50.js"></script>
 	<link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/imagelightbox.css">
 </head>
 <body>
 	<div class="card container">
@@ -147,8 +148,24 @@
                             <div class="col-xs-12 col-sm-9">
                                 <h5>Knowledgeable in multiple programming languages, markup languages and frameworks.</h5>
                                 <ul>
-                                    <li>C, C++, Java, Ruby, <a href="images/top30games.png" target="_blank" rel="popover" title="Ranking Games by Google Trends" data-img="images/top30games.png">Python, R</a>, 
-                                    <a href="http://readthym.hol.es/" target="_blank" rel="popover" title="Social Blogging Website" data-img="images/readthym.png">PHP</a>, JavaScript</li>
+                                    <li>C, C++, Java, Ruby, 
+                                    <a href="images/top30games.png" 
+                                        link=""
+                                        image="true" 
+                                        rel="popover" 
+                                        caption="Ranking Games by Google Trends" 
+                                        title="Ranking Games by Google Trends" 
+                                        data-img="images/top30games.png">
+                                        Python, R</a>,
+                                    <a href="images/readthym.png"
+                                        image="true"
+                                        link="http://readthym.hol.es/" 
+                                        rel="popover" 
+                                        caption="Social Blogging Website" 
+                                        title="Social Blogging Website" 
+                                        data-img="images/readthym.png">
+                                        PHP</a>,
+                                        JavaScript</li>
                                     <li>HTML, CSS</li>
                                     <li>Bootstrap, jQuery, AngularJS, Firebase</li>
                                 </ul>
@@ -162,7 +179,17 @@
                             <div class="col-xs-12 col-sm-9">
                                 <h5>Possess strong algorithmic thinking, problem solving and analytical skills.</h5>
                                 <ul>
-                                    <li><a href="images/the_star.jpg" target="_blank" rel="popover" title="The Star, 10 November 2016" data-img="images/the_star.jpg">National ACM-ICPC Malaysia 2016 Champion</a></li>
+                                    <li>
+                                        <a href="images/the_star.jpg" 
+                                            link=""
+                                            image="true" 
+                                            rel="popover" 
+                                            caption="The Star, 10 November 2016" 
+                                            title="The Star, 10 November 2016" 
+                                            data-img="images/the_star.jpg">
+                                            National ACM-ICPC Malaysia 2016 Champion
+                                        </a>
+                                    </li>
                                     <li>Avid competitive programming contestant</li>
                                     <li>Quick learner and problem solver</li>
                                 </ul>
@@ -182,18 +209,53 @@
         </ul>
         <p class="text-center" style="margin-bottom: 10px;">&copy; 2016. All Rights Reserved</p>
     </div>
+    <script src="scripts/imagelightbox.js"></script>
     <script>
-        var css_loading = '<div id="floatingCirclesG">' +
-                                '<div class="f_circleG" id="frotateG_01"></div>' +
-                                '<div class="f_circleG" id="frotateG_02"></div>' +
-                                '<div class="f_circleG" id="frotateG_03"></div>' +
-                                '<div class="f_circleG" id="frotateG_04"></div>' +
-                                '<div class="f_circleG" id="frotateG_05"></div>' +
-                                '<div class="f_circleG" id="frotateG_06"></div>' +
-                                '<div class="f_circleG" id="frotateG_07"></div>' +
-                                '<div class="f_circleG" id="frotateG_08"></div>' +
-                            '</div>';
-        $(document).ready(function() {                   
+        var css_loading = '<div id="floatingCirclesG"><div class="f_circleG" id="frotateG_01"></div><div class="f_circleG" id="frotateG_02"></div><div class="f_circleG" id="frotateG_03"></div>' +
+                                '<div class="f_circleG" id="frotateG_04"></div><div class="f_circleG" id="frotateG_05"></div><div class="f_circleG" id="frotateG_06"></div>' +
+                                '<div class="f_circleG" id="frotateG_07"></div><div class="f_circleG" id="frotateG_08"></div></div>';
+        $(document).ready(function() {
+            $(function() {
+                var
+                    // ACTIVITY INDICATOR
+                    activityIndicatorOn = function() { $( '<div id="imagelightbox-loading"><div>' + css_loading + '</div></div>' ).appendTo( 'body' ); },
+                    activityIndicatorOff = function() { $( '#imagelightbox-loading' ).remove(); },
+
+                    // OVERLAY
+                    overlayOn = function() { $( '<div id="imagelightbox-overlay"></div>' ).appendTo( 'body' ); },
+                    overlayOff = function() { $( '#imagelightbox-overlay' ).remove(); },
+
+                    // CLOSE BUTTON
+                    closeButtonOn = function( instance ) { 
+                        $( '<button type="button" id="imagelightbox-close" title="Close"></button>' ).appendTo( 'body' ).on( 'click touchend', function(){ $( this ).remove(); instance.quitImageLightbox(); return false; });
+                    },
+                    closeButtonOff = function() { $( '#imagelightbox-close' ).remove(); },
+
+                    // CAPTION
+                    captionOn = function()
+                    {
+                        var description = $( 'a[href="' + $( '#imagelightbox' ).attr( 'src' ) + '"]' ).attr( 'caption' );
+                        var link = $( 'a[href="' + $( '#imagelightbox' ).attr( 'src' ) + '"]' ).attr( 'link' );
+                        if( description.length > 0 || link.length > 0 ) {
+                            if (link.length > 0) {
+                                $( '<div id="imagelightbox-caption">' + description + '&ensp;<a id="viewproject" href="' + link + '" target="_blank">View Project</div>' ).appendTo( 'body' );
+                            } else {
+                                $( '<div id="imagelightbox-caption">' + description + '</div>' ).appendTo( 'body' );
+                            }
+                        }
+                            
+                    },
+                    captionOff = function() { $( '#imagelightbox-caption' ).remove(); };
+
+                var selector = 'a[image="true"]';
+                var instance = $(selector).imageLightbox(
+                    {
+                        onStart:		function() { overlayOn(); closeButtonOn( instance ); },
+                        onEnd:			function() { overlayOff(); captionOff(); closeButtonOff(); activityIndicatorOff(); },
+                        onLoadStart: 	function() { captionOff(); activityIndicatorOn(); },
+                        onLoadEnd:	 	function() { captionOn(); activityIndicatorOff(); }
+                    });
+            });
             $('[rel=popover]').hover(
                 function (event) {
                     var el = $(this);
