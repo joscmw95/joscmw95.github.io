@@ -254,3 +254,11 @@ p {
         margin-bottom: 5px;
     }
 }
+
+@media print {
+    .tab-content > .tab-pane {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+}
