@@ -54,11 +54,6 @@
       margin: 0;
     }
 
-    #accuracy,
-    #combo {
-      /*  */
-    }
-
     #missed {
       font-size: 46px;
       color: #ff5858;
@@ -106,8 +101,8 @@
 
   <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-  <div id="start" class="info">
-    <p>Press 'enter' to start.</p>
+  <div class="info">
+    <p id="start">Press 'enter' to start.</p>
   </div>
 
   <audio id="gameMusic" src="item.flac" preload="auto"></audio>
@@ -131,6 +126,7 @@
     const lanes = [150, 300, 450, 600]; // X positions of lanes
     const laneKeys = ["a", "s", "k", "l"]; // Keys corresponding to lanes
     const laneColor = [COLOR_YELLOW, COLOR_YELLOW, COLOR_YELLOW, COLOR_YELLOW];
+    const ripples = [];
     let notesByLane = new Map(); // Map to store notes per lane
     let score = 0;
     let activeBars = [0, 0, 0, 0]; // Stores fading bar opacity for each lane
@@ -215,7 +211,7 @@
     function drawFadingBars() {
       activeBars.forEach((opacity, index) => {
         if (opacity > 0) {
-          ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; // White with opacity
+          ctx.fillStyle = `rgba(200, 40, 200, ${opacity})`; // White with opacity
           ctx.fillRect(lanes[index] - 50, 0, 100, canvas.height);
         }
       });
@@ -274,7 +270,15 @@
     }
 
     // Check for note hits
-    function checkHits(key) {
+    function onKeyDown(key) {
+      if (event.key === "Enter") {
+        resumeOrPause();
+        return;
+      }
+      if (gameMusic.paused) {
+        return;
+      }
+
       const laneIndex = laneKeys.indexOf(key);
       if (laneIndex === -1) return;
 
@@ -294,19 +298,20 @@
           comboDisplay.style.animation = 'none'; // Reset animation
           void comboDisplay.offsetWidth; // Trigger reflow to restart animation
           comboDisplay.style.animation = 'combo-pop 0.5s ease-out'; // Apply pop animation
+          createRipple(note.x, hitZoneY);
         }
       });
 
       // Activate the vertical bar for the lane
-      activeBars[laneIndex] = 0.2; // Set full opacity
+      activeBars[laneIndex] = 0.5; // Set full opacity
       setTimeout(() => {
-        activeBars[laneIndex] = 0; // Fade out the bar after 1 second
-      }, 100); // Bar stays visible for 200ms
+        activeBars[laneIndex] = 0;
+      }, 100); // Bar stays visible for 100ms
     }
 
     function updateAccuracy(hitY) {
       const diffToSPerfect = Math.abs(hitY - hitZoneY);
-      console.log(diffToSPerfect);
+      // console.log('diffToSPerfect', diffToSPerfect);
       switch (true) {
         case diffToSPerfect < 20:
           accuracyDisplay.innerText = "S·Perfect";
@@ -324,6 +329,70 @@
           comboDisplay.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 5px rgb(240, 240, 240), 0 0 5px rgb(20, 20, 19)';
           comboDisplay.style.textShadow = 'none';
           break;
+      }
+    }
+
+    function createRipple(x, y) {
+      const baseSpeed = 300;
+      for (let i = 0; i < 3; i++) {
+        ripples.push({
+          x: x,
+          y: y,
+          radius: 0,
+          alpha: 1, // Slightly lower opacity for each ripple
+          speed: 100 + i * 50, // Slightly larger max radius for each ripple
+          duration: 0.3,
+          lineWidth: 30
+        });
+      }
+    }
+
+    function drawRipples(deltaTime) {
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const ripple = ripples[i];
+        ripple.radius += ripple.speed * deltaTime; // Expand radius
+        ripple.alpha -= 1 * deltaTime; // Fade out
+        ripple.duration -= deltaTime;
+
+        if (ripple.duration <= 0) {
+          ripples.splice(i, 1); // Remove completed ripple
+        }
+      }
+      for (const ripple of ripples) {
+        ctx.beginPath();
+        const waveAmplitude = 5; // Amplitude of the wave
+        const waveFrequency = 10; // Number of waves around the circle
+
+        // Create a wavy circle path
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 180) {
+          const distortedRadius =
+            ripple.radius + waveAmplitude * Math.sin(angle * waveFrequency);
+          const x = ripple.x + distortedRadius * Math.cos(angle);
+          const y = ripple.y + distortedRadius * Math.sin(angle);
+
+          if (angle === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.closePath();
+
+        // Apply gradient stroke for a glowing effect
+        const gradient = ctx.createRadialGradient(
+          ripple.x,
+          ripple.y,
+          ripple.radius / 2,
+          ripple.x,
+          ripple.y,
+          ripple.radius
+        );
+        gradient.addColorStop(0, `rgba(255, 219, 0, ${ripple.alpha})`);
+        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = ripple.lineWidth;
+        ctx.stroke();
       }
     }
 
@@ -354,6 +423,7 @@
       drawHitZone();
       drawFadingBars();
       drawNotes();
+      drawRipples(deltaTime);
       updateNotes(deltaTime);
 
       // Request the next frame
@@ -363,16 +433,24 @@
     // Start game music and game loop when Enter is pressed
     const gameMusic = document.getElementById("gameMusic");
     function startGameListener(event) {
-      document.getElementById("start").style.display = "none";
       if (event.key === "Enter") {
         gameMusic.play().then(() => {
           console.log("Music started!");
-          document.addEventListener("keydown", e => checkHits(e.key.toLowerCase()));
+          document.getElementById("start").innerText = "Press 'enter' to resume or pause.";
+          document.addEventListener("keydown", e => onKeyDown(e.key.toLowerCase()));
           requestAnimationFrame(gameLoop);
           document.removeEventListener("keydown", startGameListener);
         }).catch(error => {
           console.error("Error playing music:", error);
         });
+      }
+    }
+
+    function resumeOrPause() {
+      if (gameMusic.paused) {
+        gameMusic.play();
+      } else {
+        gameMusic.pause();
       }
     }
     document.addEventListener("keydown", startGameListener);
