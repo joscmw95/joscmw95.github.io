@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="initial-scale=1.0">
+  <title>Rhythm Game</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #222;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      display: block;
+      margin: auto;
+      background-color: #333;
+    }
+
+    #info {
+      text-align: center;
+      font-weight: bold;
+      color: white;
+      z-index: 100;
+    }
+
+    .lane-info {
+      position: absolute;
+      color: white;
+      font-size: 48px;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      font-weight: bold;
+      z-index: 10;
+    }
+
+    .combo {
+      left: 50%;
+      transform: translateX(-50%);
+      top: 25%;
+    }
+
+    /* Style for the combo and score to make them bigger and more stylish */
+    .lane-info {
+      font-family: 'Roboto', sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="info">
+    <h1>Rhythm Game</h1>
+    <p>Press the keys (A, S, K, L) to hit the notes!</p>
+    <p id="score">Score: 0</p>
+    <p id="time">Time: 0</p>
+  </div>
+
+  <div class="lane-info combo">
+    <p id="combo">Combo: 0</p>
+  </div>
+
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+  <audio id="gameMusic" src="item.flac" preload="auto"></audio>
+  <script src="beatmap.js"></script>
+  <script>
+    // Set up the canvas
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Game variables
+    const lanes = [150, 300, 450, 600]; // X positions of lanes
+    const laneKeys = ["a", "s", "k", "l"]; // Keys corresponding to lanes
+    const laneColor = ["#A230FF", "#007AFF", "#4CD964", "#FFCC00"]; // Colors for each lane
+    let notes = []; // Array to hold falling notes
+    let score = 0;
+    let activeBars = [0, 0, 0, 0]; // Stores fading bar opacity for each lane
+    let combo = 0; // Combo counter
+    let comboMultiplier = 1; // Combo multiplier (for score bonus)
+
+    const hitZoneY = canvas.height - 60; // Bottom of the screen, where notes are hit
+    const hitZoneHeight = 40; // Height of the valid hit range
+    const hitZoneTop = hitZoneY - 60;
+    const hitZoneBottom = hitZoneY + hitZoneHeight + 20;
+
+    // Load notes from the beatmap
+    function loadNotes() {
+      notes = beatmap.map(note => ({
+        lane: note.lane,
+        x: lanes[note.lane], // Map lane number to lane position
+        y: -50, // Start above the screen
+        time: note.time,
+        hit: false, // Whether the note has been hit
+        missed: false,
+        fillColor: laneColor[Math.floor(note.time % 4)], // Default note color
+        alpha: 1, // Initial opacity
+        scale: 1, // Initial scale
+        flashTime: 0, // Time left for flash effect
+      }));
+    }
+
+    // Draw the lanes
+    function drawLanes() {
+      ctx.strokeStyle = "white";
+      for (let i = 0; i < lanes.length; i++) {
+        ctx.strokeRect(lanes[i] - 50, 0, 100, canvas.height);
+      }
+    }
+
+    // Draw the hit zone (the grey bar where notes should be hit)
+    function drawHitZone() {
+      ctx.fillStyle = "#888"; // Grey color for the hit zone
+      for (let i = 0; i < lanes.length; i++) {
+        ctx.fillRect(lanes[i] - 50, hitZoneY, 100, hitZoneHeight);
+      }
+      // ctx.strokeStyle = "yellow";
+      // lanes.forEach(lane => {
+      //   ctx.beginPath();
+      //   ctx.moveTo(lane - 50, hitZoneY - 60);
+      //   ctx.lineTo(lane + 50, hitZoneY - 60);
+      //   ctx.stroke();
+      //   ctx.beginPath();
+      //   ctx.moveTo(lane - 50, hitZoneY + hitZoneHeight + 20);
+      //   ctx.lineTo(lane + 50, hitZoneY + hitZoneHeight + 20);
+      //   ctx.stroke();
+      // });
+    }
+
+    // Draw the fading bars for key press feedback
+    function drawFadingBars() {
+      activeBars.forEach((opacity, index) => {
+        if (opacity > 0) {
+          ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`; // White with opacity
+          ctx.fillRect(lanes[index] - 50, 0, 100, canvas.height);
+        }
+      });
+    }
+
+    // Modify drawing to support animation
+    function drawNotes() {
+      notes.forEach(note => {
+        ctx.save();
+        ctx.globalAlpha = note.alpha || 1; // Set alpha for fading effect
+        ctx.scale(note.scale || 1, note.scale || 1); // Set scale for expanding effect
+        ctx.fillStyle = note.fillColor; // Use the note's color
+        ctx.fillRect(note.x - 50, note.y, 100, 20);
+        ctx.restore();
+      });
+    }
+
+    // Update the notes
+    function updateNotes(deltaTime) {
+      document.getElementById("time").innerText = "Time: " + gameMusic.currentTime;
+      notes.forEach(note => {
+        if (!note.hit && !note.missed) {
+          note.y = hitZoneY - 10 - (note.time - gameMusic.currentTime) * canvas.height;
+          if (note.y > canvas.height - 20) { // After passing the hit zone, into the gap
+            note.missed = true;
+            note.fillColor = "red";  // Change note color to red
+            note.alpha -= 0.05; // Fade out effect
+            if (note.alpha < 0) {
+              note.alpha = 0; // Stop fading when fully transparent
+            }
+            // Reset combo if note is missed
+            resetCombo();
+          }
+        } else {
+          if (note.flashTime > 0) {
+            note.fillColor = "green";  // Flash green when hit
+            note.flashTime -= deltaTime;
+          } else {
+            note.fillColor = "yellow"; // Reset back to normal color
+          }
+          note.scale += 0.1; // Slight scale increase when hit
+          note.alpha -= 0.05; // Fade out effect
+          if (note.scale > 1.5) {
+            note.scale = 1.5; // Limit scale
+          }
+          if (note.alpha < 0) {
+            note.alpha = 0; // Stop fading
+          }
+        }
+      });
+    }
+
+    // Check for note hits
+    function checkHits(key) {
+      const laneIndex = laneKeys.indexOf(key);
+      if (laneIndex === -1) return;
+
+      const laneX = lanes[laneIndex];
+      notes.filter(note => !note.missed && !note.hit).forEach(note => {
+        if (Math.abs(note.x - laneX) < 50 && note.y >= hitZoneTop && note.y <= hitZoneBottom) {
+          note.hit = true; // Mark note as hit
+          note.flashTime = 0.2; // Flash effect duration
+          score += 100 * comboMultiplier; // Increment score with combo multiplier
+          combo++; // Increase combo count
+          comboMultiplier = Math.min(comboMultiplier + 1, 5); // Max combo multiplier at 5
+          document.getElementById("score").innerText = "Score: " + score;
+          document.getElementById("combo").innerText = "Combo: " + combo; // Update combo display
+        }
+      });
+
+      // Activate the vertical bar for the lane
+      activeBars[laneIndex] = 0.2; // Set full opacity
+      setTimeout(() => {
+        activeBars[laneIndex] = 0; // Fade out the bar after 1 second
+      }, 200); // Bar stays visible for 200ms
+    }
+
+    // Reset combo if a note is missed
+    function resetCombo() {
+      combo = 0;
+      comboMultiplier = 1;
+      document.getElementById("combo").innerText = "Combo: " + combo; // Reset combo display
+    }
+
+    // Main game loop
+    let lastTime = 0;
+    function gameLoop(timestamp) {
+      const deltaTime = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update and draw game elements
+      drawLanes();
+      drawHitZone();
+      drawFadingBars();
+      drawNotes();
+      updateNotes(deltaTime);
+
+      // Request the next frame
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start game music and game loop when Enter is pressed
+    const gameMusic = document.getElementById("gameMusic");
+    function startGameListener(event) {
+      if (event.key === "Enter") {
+        gameMusic.play().then(() => {
+          console.log("Music started!");
+          document.addEventListener("keydown", e => checkHits(e.key.toLowerCase()));
+          requestAnimationFrame(gameLoop);
+          document.removeEventListener("keydown", startGameListener);
+        }).catch(error => {
+          console.error("Error playing music:", error);
+        });
+      }
+    }
+    document.addEventListener("keydown", startGameListener);
+
+    // Initialize the game
+    loadNotes();
+  </script>
+</body>
+
+</html>
