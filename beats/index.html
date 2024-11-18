@@ -29,7 +29,7 @@
     .lane-info {
       position: absolute;
       color: white;
-      font-size: 48px;
+      font-size: 42px;
       font-family: 'Arial', sans-serif;
       text-align: center;
       font-weight: bold;
@@ -39,12 +39,13 @@
     .combo {
       left: 50%;
       transform: translateX(-50%);
-      top: 25%;
+      top: 30%;
       pointer-events: none;
     }
 
     #combo-display {
       display: flex;
+      text-transform: uppercase;
       flex-direction: column;
       justify-content: center;
       height: 150px;
@@ -55,7 +56,7 @@
     }
 
     #missed {
-      font-size: 46px;
+      font-size: 40px;
       color: #ff5858;
     }
 
@@ -107,6 +108,7 @@
 
   <audio id="gameMusic" src="item.flac" preload="auto"></audio>
   <script src="beatmap.js"></script>
+  <script src="deque.js"></script>
   <script>
     const COLOR_YELLOW = "#ffce00";
     const COLOR_GOLDEN = "#ffdb4d";
@@ -140,7 +142,7 @@
 
     // Load notes from the beatmap
     function loadNotes() {
-      beatmap.forEach(note => {
+      beatmap.sort((a, b) => a.time - b.time).forEach(note => {
         const noteData = {
           lane: note.lane,
           x: lanes[note.lane], // Map lane number to lane position
@@ -148,17 +150,14 @@
           time: note.time,
           hit: false, // Whether the note has been hit
           missed: false,
-          fillColor: laneColor[Math.floor(note.time % 4)], // Default note color
-          alpha: 1, // Initial opacity
-          scale: 1, // Initial scale
-          flashTime: 0, // Time left for flash effect
+          fillColor: laneColor[Math.floor(note.time % 4)] // Default note color
         };
         // Check if the lane already exists in the map
         if (!notesByLane.has(note.lane)) {
-          notesByLane.set(note.lane, []);
+          notesByLane.set(note.lane, new Deque());
         }
         // Add the note to the corresponding lane's array
-        notesByLane.get(note.lane).push(noteData);
+        notesByLane.get(note.lane).addBack(noteData);
       });
     }
 
@@ -221,12 +220,17 @@
     function drawNotes() {
       notesByLane.forEach(notes => {
         notes.forEach(note => {
-          if (note.y < 0) return;
           ctx.save();
-          ctx.globalAlpha = note.alpha || 1; // Set alpha for fading effect
-          ctx.scale(note.scale || 1, note.scale || 1); // Set scale for expanding effect
+
+          // Draw the white border
+          ctx.lineWidth = 2; // Thickness of the border
+          ctx.strokeStyle = 'white'; // Border color
+          ctx.strokeRect(note.x - 50, note.y, 100, 20); // Slightly larger than the note itself
+
+          // Draw the note
           ctx.fillStyle = note.fillColor; // Use the note's color
           ctx.fillRect(note.x - 50, note.y, 100, 20); // Draw the note
+
           ctx.restore();
         });
       });
@@ -236,34 +240,12 @@
     function updateNotes(deltaTime) {
       document.getElementById("time").innerText = "Time: " + gameMusic.currentTime;
       notesByLane.forEach(notes => {
-        notes.forEach(note => {
-          if (!note.hit && !note.missed) {
-            note.y = hitZoneY - 10 - (note.time - gameMusic.currentTime) * canvas.height;
-            if (note.y > canvas.height) { // After passing the hit zone, into the gap
-              note.missed = true;
-              note.fillColor = "red";  // Change note color to red
-              note.alpha -= 0.05; // Fade out effect
-              if (note.alpha < 0) {
-                note.alpha = 0; // Stop fading when fully transparent
-              }
-              // Reset combo if note is missed
-              resetCombo();
-            }
-          } else {
-            if (note.flashTime > 0) {
-              note.fillColor = "green";  // Flash green when hit
-              note.flashTime -= deltaTime;
-            } else {
-              note.fillColor = "yellow"; // Reset back to normal color
-            }
-            note.scale += 0.1; // Slight scale increase when hit
-            note.alpha -= 0.05; // Fade out effect
-            if (note.scale > 1.5) {
-              note.scale = 1.5; // Limit scale
-            }
-            if (note.alpha < 0) {
-              note.alpha = 0; // Stop fading
-            }
+        notes.some(note => {
+          note.y = hitZoneY - 10 - (note.time - gameMusic.currentTime) * canvas.height;
+          if (note.y > canvas.height) { // After passing the hit zone, into the gap
+            notes.removeFront();
+            // Reset combo if note is missed
+            resetCombo();
           }
         })
       });
@@ -284,10 +266,9 @@
 
       const laneX = lanes[laneIndex];
       const notes = notesByLane.get(laneIndex);
-      notes.filter(note => !note.missed && !note.hit).forEach(note => {
+      notes.some(note => {
         if (Math.abs(note.x - laneX) < 50 && note.y >= hitZoneTop && note.y <= hitZoneBottom) {
-          note.hit = true; // Mark note as hit
-          note.flashTime = 0.2; // Flash effect duration
+          notes.removeFront();
           score += 100 * comboMultiplier; // Increment score with combo multiplier
           combo++; // Increase combo count
           comboMultiplier = Math.min(comboMultiplier + 1, 5); // Max combo multiplier at 5
@@ -299,7 +280,9 @@
           void comboDisplay.offsetWidth; // Trigger reflow to restart animation
           comboDisplay.style.animation = 'combo-pop 0.5s ease-out'; // Apply pop animation
           createRipple(note.x, hitZoneY);
+          return true;
         }
+        return false;
       });
 
       // Activate the vertical bar for the lane
@@ -402,7 +385,7 @@
       comboMultiplier = 1;
       accuracyDisplay.innerText = ""; // Update accuracy display
       comboCounter.innerText = "";
-      missedDisplay.innerText = "Missed!";
+      missedDisplay.innerText = "Miss";
       comboDisplay.style.textShadow = 'none';
       comboDisplay.style.animation = 'none'; // Reset animation
       void comboDisplay.offsetWidth; // Trigger reflow to restart animation
