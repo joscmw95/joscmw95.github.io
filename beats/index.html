@@ -60,6 +60,101 @@
       color: #ff5858;
     }
 
+    .track-selector {
+      margin: 20px auto;
+      text-align: center;
+    }
+
+    .track-selector select {
+      padding: 10px;
+      font-size: 16px;
+      background-color: #333;
+      color: white;
+      border: 2px solid #666;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .track-selector select:hover {
+      border-color: #888;
+    }
+
+    /* Audio Controls Styles */
+    .audio-controls {
+      margin: 20px auto;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .audio-controls button {
+      padding: 8px 15px;
+      font-size: 16px;
+      background-color: #333;
+      color: white;
+      border: 2px solid #666;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .audio-controls button:hover {
+      border-color: #888;
+    }
+
+    .audio-controls input[type="range"] {
+      width: 150px;
+      height: 5px;
+      -webkit-appearance: none;
+      background: #666;
+      border-radius: 5px;
+      outline: none;
+    }
+
+    .audio-controls input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    /* Seek bar styles */
+    .seek-controls {
+      margin: 20px auto;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .seek-controls input[type="range"] {
+      width: 400px;
+      height: 5px;
+      -webkit-appearance: none;
+      background: #666;
+      border-radius: 5px;
+      outline: none;
+    }
+
+    .seek-controls input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .time-display {
+      font-family: monospace;
+      font-size: 14px;
+      color: #888;
+    }
+
     /* Style for the combo and score to make them bigger and more stylish */
     .lane-info {
       font-family: 'Roboto', sans-serif;
@@ -87,9 +182,29 @@
 <body>
   <div class="info">
     <h1>Rhythm Game</h1>
+    <div class="track-selector">
+      <select id="trackSelect">
+        <option>ChkChkBoom</option>
+        <option>Mosquito</option>
+        <option>Lutie</option>
+        <option>Thunderous</option>
+        <option>Item</option>
+        <option>Item (Hard)</option>
+      </select>
+    </div>
     <p>Press the keys (A, S, K, L) to hit the notes!</p>
     <p id="score">Score: 0</p>
     <p id="time">Time: 0</p>
+    <div class="audio-controls">
+      <button id="muteButton">🔊</button>
+      <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
+    </div>
+    <div class="seek-controls">
+      <input type="range" id="seekBar" min="0" max="100" value="0">
+      <div class="time-display">
+        <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+      </div>
+    </div>
   </div>
 
   <div class="lane-info combo">
@@ -103,345 +218,12 @@
   <canvas id="gameCanvas" width="800" height="600"></canvas>
 
   <div class="info">
-    <p id="start">Press 'enter' to start.</p>
+    <p id="start">Select a track and press 'enter' to start.</p>
   </div>
 
-  <audio id="gameMusic" src="item.flac" preload="auto"></audio>
-  <script src="beatmap.js"></script>
+  <audio id="gameMusic" preload="auto"></audio>
   <script src="deque.js"></script>
-  <script>
-    const COLOR_YELLOW = "#ffce00";
-    const COLOR_GOLDEN = "#ffdb4d";
-    const COLOR_PURPLE = "#A230FF";
-    const COLOR_BLUE = "#007AFF";
-    const COLOR_GREEN = "#4CD964";
-    // Set up the canvas
-    const canvas = document.getElementById("gameCanvas");
-    const scoreDisplay = document.getElementById("score");
-    const comboDisplay = document.getElementById("combo-display");
-    const accuracyDisplay = document.getElementById("accuracy");
-    const comboCounter = document.getElementById("combo");
-    const missedDisplay = document.getElementById("missed");
-    const ctx = canvas.getContext("2d");
-
-    // Game variables
-    const lanes = [150, 300, 450, 600]; // X positions of lanes
-    const laneKeys = ["a", "s", "k", "l"]; // Keys corresponding to lanes
-    const laneColor = [COLOR_YELLOW, COLOR_YELLOW, COLOR_YELLOW, COLOR_YELLOW];
-    const ripples = [];
-    let notesByLane = new Map(); // Map to store notes per lane
-    let score = 0;
-    let activeBars = [0, 0, 0, 0]; // Stores fading bar opacity for each lane
-    let combo = 0; // Combo counter
-    let comboMultiplier = 1; // Combo multiplier (for score bonus)
-
-    const hitZoneY = canvas.height - 60; // Bottom of the screen, where notes are hit
-    const hitZoneHeight = 40; // Height of the valid hit range
-    const hitZoneTop = hitZoneY - 80;
-    const hitZoneBottom = canvas.height;
-
-    // Load notes from the beatmap
-    function loadNotes() {
-      beatmap.sort((a, b) => a.time - b.time).forEach(note => {
-        const noteData = {
-          lane: note.lane,
-          x: lanes[note.lane], // Map lane number to lane position
-          y: -50, // Start above the screen
-          time: note.time,
-          hit: false, // Whether the note has been hit
-          missed: false,
-          fillColor: laneColor[Math.floor(note.time % 4)] // Default note color
-        };
-        // Check if the lane already exists in the map
-        if (!notesByLane.has(note.lane)) {
-          notesByLane.set(note.lane, new Deque());
-        }
-        // Add the note to the corresponding lane's array
-        notesByLane.get(note.lane).addBack(noteData);
-      });
-    }
-
-    // Draw the lanes
-    function drawLanes() {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; // Example color for lanes (change as needed)
-      for (let i = 0; i < lanes.length; i++) {
-        ctx.fillRect(lanes[i] - 50, 0, 100, canvas.height); // Fill the lane without a border
-      }
-    }
-
-    // Draw the hit zone (the grey bar where notes should be hit)
-    function drawHitZone() {
-      // Create a gradient for the shiny effect
-      let gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, "rgba(173, 216, 230, 0.4)");  // Light blue at the top
-      gradient.addColorStop(0.5, "rgba(0, 123, 255, 0.6)");  // Bright blue for the middle
-      gradient.addColorStop(1, "rgba(173, 216, 230, 0.4)");  // Light blue at the bottom
-
-      // Apply the glow effect around the lanes
-      ctx.shadowBlur = 20; // Makes the shadow/halo softer and bigger
-      ctx.shadowColor = "rgba(153, 82, 255, 0.8)"; // Purple glow color
-
-      // Set the gradient as the fill style
-      ctx.fillStyle = gradient;
-
-      // Draw the hit zone with the gradient and glow effect
-      ctx.fillRect(lanes[0] - 50, hitZoneY, 550, 55); // Adjust the width based on your lanes
-
-      // Reset the shadow to avoid affecting other drawings
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = "transparent"; // Reset the shadow color
-
-
-      // debug hit zone
-      // ctx.strokeStyle = "yellow";
-      // lanes.forEach(lane => {
-      //   ctx.beginPath();
-      //   ctx.moveTo(lane - 50, hitZoneY - 60);
-      //   ctx.lineTo(lane + 50, hitZoneY - 60);
-      //   ctx.stroke();
-      //   ctx.beginPath();
-      //   ctx.moveTo(lane - 50, hitZoneY + hitZoneHeight + 20);
-      //   ctx.lineTo(lane + 50, hitZoneY + hitZoneHeight + 20);
-      //   ctx.stroke();
-      // });
-    }
-
-    // Draw the fading bars for key press feedback
-    function drawFadingBars() {
-      activeBars.forEach((opacity, index) => {
-        if (opacity > 0) {
-          ctx.fillStyle = `rgba(200, 40, 200, ${opacity})`; // White with opacity
-          ctx.fillRect(lanes[index] - 50, 0, 100, canvas.height);
-        }
-      });
-    }
-
-    // Modify drawing to support animation
-    function drawNotes() {
-      notesByLane.forEach(notes => {
-        notes.forEach(note => {
-          ctx.save();
-
-          // Draw the white border
-          ctx.lineWidth = 2; // Thickness of the border
-          ctx.strokeStyle = 'white'; // Border color
-          ctx.strokeRect(note.x - 50, note.y, 100, 20); // Slightly larger than the note itself
-
-          // Draw the note
-          ctx.fillStyle = note.fillColor; // Use the note's color
-          ctx.fillRect(note.x - 50, note.y, 100, 20); // Draw the note
-
-          ctx.restore();
-        });
-      });
-    }
-
-    // Update the notes
-    function updateNotes(deltaTime) {
-      document.getElementById("time").innerText = "Time: " + gameMusic.currentTime;
-      notesByLane.forEach(notes => {
-        notes.some(note => {
-          note.y = hitZoneY - 10 - (note.time - gameMusic.currentTime) * canvas.height;
-          if (note.y > canvas.height) { // After passing the hit zone, into the gap
-            notes.removeFront();
-            // Reset combo if note is missed
-            resetCombo();
-          }
-        })
-      });
-    }
-
-    // Check for note hits
-    function onKeyDown(key) {
-      if (event.key === "Enter") {
-        resumeOrPause();
-        return;
-      }
-      if (gameMusic.paused) {
-        return;
-      }
-
-      const laneIndex = laneKeys.indexOf(key);
-      if (laneIndex === -1) return;
-
-      const laneX = lanes[laneIndex];
-      const notes = notesByLane.get(laneIndex);
-      notes.some(note => {
-        if (Math.abs(note.x - laneX) < 50 && note.y >= hitZoneTop && note.y <= hitZoneBottom) {
-          notes.removeFront();
-          score += 100 * comboMultiplier; // Increment score with combo multiplier
-          combo++; // Increase combo count
-          comboMultiplier = Math.min(comboMultiplier + 1, 5); // Max combo multiplier at 5
-          scoreDisplay.innerText = "Score: " + score;
-          comboCounter.innerText = combo; // Update combo display
-          updateAccuracy(note.y)
-          missedDisplay.innerText = "";
-          comboDisplay.style.animation = 'none'; // Reset animation
-          void comboDisplay.offsetWidth; // Trigger reflow to restart animation
-          comboDisplay.style.animation = 'combo-pop 0.5s ease-out'; // Apply pop animation
-          createRipple(note.x, hitZoneY);
-          return true;
-        }
-        return false;
-      });
-
-      // Activate the vertical bar for the lane
-      activeBars[laneIndex] = 0.5; // Set full opacity
-      setTimeout(() => {
-        activeBars[laneIndex] = 0;
-      }, 100); // Bar stays visible for 100ms
-    }
-
-    function updateAccuracy(hitY) {
-      const diffToSPerfect = Math.abs(hitY - hitZoneY);
-      // console.log('diffToSPerfect', diffToSPerfect);
-      switch (true) {
-        case diffToSPerfect < 20:
-          accuracyDisplay.innerText = "S·Perfect";
-          comboDisplay.style.color = COLOR_GOLDEN;
-          comboDisplay.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 10px rgb(240, 240, 240), 0 0 5px rgb(20, 20, 19)';
-          break;
-        case diffToSPerfect < 40:
-          accuracyDisplay.innerText = "Perfect";
-          comboDisplay.style.color = COLOR_YELLOW;
-          comboDisplay.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 5px rgb(240, 240, 240), 0 0 5px rgb(20, 20, 19)';
-          break;
-        default:
-          accuracyDisplay.innerText = "Good";
-          comboDisplay.style.color = COLOR_GREEN;
-          comboDisplay.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.6), 0 0 5px rgb(240, 240, 240), 0 0 5px rgb(20, 20, 19)';
-          comboDisplay.style.textShadow = 'none';
-          break;
-      }
-    }
-
-    function createRipple(x, y) {
-      const baseSpeed = 300;
-      for (let i = 0; i < 3; i++) {
-        ripples.push({
-          x: x,
-          y: y,
-          radius: 0,
-          alpha: 1, // Slightly lower opacity for each ripple
-          speed: 100 + i * 50, // Slightly larger max radius for each ripple
-          duration: 0.3,
-          lineWidth: 30
-        });
-      }
-    }
-
-    function drawRipples(deltaTime) {
-      for (let i = ripples.length - 1; i >= 0; i--) {
-        const ripple = ripples[i];
-        ripple.radius += ripple.speed * deltaTime; // Expand radius
-        ripple.alpha -= 1 * deltaTime; // Fade out
-        ripple.duration -= deltaTime;
-
-        if (ripple.duration <= 0) {
-          ripples.splice(i, 1); // Remove completed ripple
-        }
-      }
-      for (const ripple of ripples) {
-        ctx.beginPath();
-        const waveAmplitude = 5; // Amplitude of the wave
-        const waveFrequency = 10; // Number of waves around the circle
-
-        // Create a wavy circle path
-        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 180) {
-          const distortedRadius =
-            ripple.radius + waveAmplitude * Math.sin(angle * waveFrequency);
-          const x = ripple.x + distortedRadius * Math.cos(angle);
-          const y = ripple.y + distortedRadius * Math.sin(angle);
-
-          if (angle === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-        ctx.closePath();
-
-        // Apply gradient stroke for a glowing effect
-        const gradient = ctx.createRadialGradient(
-          ripple.x,
-          ripple.y,
-          ripple.radius / 2,
-          ripple.x,
-          ripple.y,
-          ripple.radius
-        );
-        gradient.addColorStop(0, `rgba(255, 219, 0, ${ripple.alpha})`);
-        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
-
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = ripple.lineWidth;
-        ctx.stroke();
-      }
-    }
-
-    // Reset combo if a note is missed
-    function resetCombo() {
-      combo = 0;
-      comboMultiplier = 1;
-      accuracyDisplay.innerText = ""; // Update accuracy display
-      comboCounter.innerText = "";
-      missedDisplay.innerText = "Miss";
-      comboDisplay.style.textShadow = 'none';
-      comboDisplay.style.animation = 'none'; // Reset animation
-      void comboDisplay.offsetWidth; // Trigger reflow to restart animation
-      comboDisplay.style.animation = 'combo-pop 0.5s ease-out'; // Apply pop animation
-    }
-
-    // Main game loop
-    let lastTime = 0;
-    function gameLoop(timestamp) {
-      const deltaTime = (timestamp - lastTime) / 1000;
-      lastTime = timestamp;
-
-      // Clear the canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Update and draw game elements
-      drawLanes();
-      drawHitZone();
-      drawFadingBars();
-      drawNotes();
-      drawRipples(deltaTime);
-      updateNotes(deltaTime);
-
-      // Request the next frame
-      requestAnimationFrame(gameLoop);
-    }
-
-    // Start game music and game loop when Enter is pressed
-    const gameMusic = document.getElementById("gameMusic");
-    function startGameListener(event) {
-      if (event.key === "Enter") {
-        gameMusic.play().then(() => {
-          console.log("Music started!");
-          document.getElementById("start").innerText = "Press 'enter' to resume or pause.";
-          document.addEventListener("keydown", e => onKeyDown(e.key.toLowerCase()));
-          requestAnimationFrame(gameLoop);
-          document.removeEventListener("keydown", startGameListener);
-        }).catch(error => {
-          console.error("Error playing music:", error);
-        });
-      }
-    }
-
-    function resumeOrPause() {
-      if (gameMusic.paused) {
-        gameMusic.play();
-      } else {
-        gameMusic.pause();
-      }
-    }
-    document.addEventListener("keydown", startGameListener);
-
-    // Initialize the game
-    loadNotes();
-  </script>
-
+  <script src="game.js"></script>
 </body>
 
 </html>
