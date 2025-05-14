@@ -347,8 +347,6 @@ function gameLoop(timestamp) {
 
 // Start game music and game loop when Enter is pressed
 const gameMusic = document.getElementById("gameMusic");
-const muteButton = document.getElementById("muteButton");
-const volumeSlider = document.getElementById("volumeSlider");
 const seekBar = document.getElementById("seekBar");
 const currentTimeDisplay = document.getElementById("currentTime");
 const totalTimeDisplay = document.getElementById("totalTime");
@@ -383,27 +381,7 @@ function handleSeek() {
   });
 }
 
-// Audio control functions
-function toggleMute() {
-  gameMusic.muted = !gameMusic.muted;
-  muteButton.textContent = gameMusic.muted ? "🔇" : "🔊";
-}
-
-function updateVolume() {
-  gameMusic.volume = volumeSlider.value;
-  // Update mute button if volume is 0
-  if (gameMusic.volume === "0") {
-    gameMusic.muted = true;
-    muteButton.textContent = "🔇";
-  } else if (gameMusic.muted) {
-    gameMusic.muted = false;
-    muteButton.textContent = "🔊";
-  }
-}
-
 // Initialize audio controls
-muteButton.addEventListener('click', toggleMute);
-volumeSlider.addEventListener('input', updateVolume);
 seekBar.addEventListener('input', handleSeek);
 gameMusic.addEventListener('timeupdate', updateSeekBar);
 gameMusic.addEventListener('loadedmetadata', updateSeekBar);

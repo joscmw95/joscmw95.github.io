@@ -13,6 +13,55 @@
       font-family: Arial, sans-serif;
     }
 
+    .header {
+      position: fixed;
+      top: 0;
+      right: 0;
+      padding: 30px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .track-selector {
+      margin: 0;
+      text-align: right;
+    }
+
+    .track-selector select {
+      padding: 10px;
+      font-size: 16px;
+      background-color: #333;
+      color: white;
+      border: 2px solid #666;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .track-selector select:hover {
+      border-color: #888;
+    }
+
+    .seek-controls input[type="range"] {
+      height: 5px;
+      width: 200px;
+      -webkit-appearance: none;
+      background: #666;
+      border-radius: 5px;
+      outline: none;
+    }
+
+    .seek-controls input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
     canvas {
       display: block;
       margin: auto;
@@ -20,10 +69,26 @@
     }
 
     .info {
+      max-width: 800px;
+      margin: auto;
       text-align: center;
       font-weight: bold;
       color: white;
       z-index: 100;
+    }
+
+    .score-time-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 10px;
+    }
+
+    #score {
+      text-align: left;
+    }
+
+    #time {
+      text-align: right;
     }
 
     .lane-info {
@@ -60,95 +125,6 @@
       color: #ff5858;
     }
 
-    .track-selector {
-      margin: 20px auto;
-      text-align: center;
-    }
-
-    .track-selector select {
-      padding: 10px;
-      font-size: 16px;
-      background-color: #333;
-      color: white;
-      border: 2px solid #666;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .track-selector select:hover {
-      border-color: #888;
-    }
-
-    /* Audio Controls Styles */
-    .audio-controls {
-      margin: 20px auto;
-      text-align: center;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .audio-controls button {
-      padding: 8px 15px;
-      font-size: 16px;
-      background-color: #333;
-      color: white;
-      border: 2px solid #666;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .audio-controls button:hover {
-      border-color: #888;
-    }
-
-    .audio-controls input[type="range"] {
-      width: 150px;
-      height: 5px;
-      -webkit-appearance: none;
-      background: #666;
-      border-radius: 5px;
-      outline: none;
-    }
-
-    .audio-controls input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 15px;
-      height: 15px;
-      background: #fff;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-
-    /* Seek bar styles */
-    .seek-controls {
-      margin: 20px auto;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .seek-controls input[type="range"] {
-      width: 400px;
-      height: 5px;
-      -webkit-appearance: none;
-      background: #666;
-      border-radius: 5px;
-      outline: none;
-    }
-
-    .seek-controls input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 15px;
-      height: 15px;
-      background: #fff;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-
     .time-display {
       font-family: monospace;
       font-size: 14px;
@@ -180,9 +156,9 @@
 </head>
 
 <body>
-  <div class="info">
-    <h1>Rhythm Game</h1>
+  <div class="header">
     <div class="track-selector">
+      Track:
       <select id="trackSelect">
         <option>ChkChkBoom</option>
         <option>Mosquito</option>
@@ -192,18 +168,20 @@
         <option>Item (Hard)</option>
       </select>
     </div>
+  </div>
+
+  <div class="info">
+    <h1>Rhythm Game</h1>
     <p>Press the keys (A, S, K, L) to hit the notes!</p>
-    <p id="score">Score: 0</p>
-    <p id="time">Time: 0</p>
-    <div class="audio-controls">
-      <button id="muteButton">🔊</button>
-      <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
-    </div>
     <div class="seek-controls">
       <input type="range" id="seekBar" min="0" max="100" value="0">
       <div class="time-display">
         <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
       </div>
+    </div>
+    <div class="score-time-row">
+      <p id="score">Score: 0</p>
+      <p id="time">Time: 0</p>
     </div>
   </div>
 
